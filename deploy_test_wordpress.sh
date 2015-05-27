@@ -8,20 +8,19 @@ echo
 ## Configuration
 
 # Plugin slug name
-PLUGINSLUG='zendesk'
+PLUGINSLUG='wp-plugin-test'
 
 # Path to temporary svn repo
-SVNPATH="/tmp/svn/$PLUGINSLUG"
+SVNPATH="./tmp/svn/$PLUGINSLUG"
 
 # URL of SVN repo
-#SVNURL="http://plugins.svn.wordpress.org/$PLUGINSLUG"
-SVNURL="https://subversion.assembla.com/svn/wp-plugin-test/"
+SVNURL="https://subversion.assembla.com/svn/$PLUGINSLUG"
 
 # User to use for svn repo
 SVNUSER="miog"
 
 # Local directory where to find the git repository
-PLUGINDIR="/tmp/git/$PLUGINSLUG"
+PLUGINDIR="./tmp/git/$PLUGINSLUG"
 
 # Name of the main file of the plugin
 MAINFILE="hello.php"
@@ -66,15 +65,6 @@ if git show-ref --tags --quiet --verify -- "refs/tags/$PLUGINVERSION"
 		echo "Git version does not exist. Let's proceed..."
 fi
 
-echo "Changing to $GITPATH"
-cd $GITPATH
-
-echo "Tagging new version in git"
-git tag -a "$PLUGINVERSION" -m "Tagging version $PLUGINVERSION"
-
-echo "Pushing git master to origin, with tags"
-git push origin master --tags
-
 echo
 echo "Creating local copy of SVN repo trunk ..."
 svn checkout $SVNURL $SVNPATH --depth immediates
@@ -82,29 +72,14 @@ svn update --quiet $SVNPATH/trunk --set-depth infinity
 
 echo "Ignoring GitHub specific files"
 svn propset svn:ignore "README.md
-.DS_Store
-Thumbs.db
 .git
 .gitignore" "$SVNPATH/trunk/"
 
+echo "Changing to $GITPATH"
+cd $GITPATH
+
 echo "Exporting the HEAD of master from git to the trunk of SVN"
 git checkout-index -a -f --prefix=$SVNPATH/trunk/
-
-# If submodule exist, recursively check out their indexes
-if [ -f ".gitmodules" ]
-	then
-		echo "Exporting the HEAD of each submodule from git to the trunk of SVN"
-		git submodule init
-		git submodule update
-		git config -f .gitmodules --get-regexp '^submodule\..*\.path$' |
-			while read path_key path
-			do
-				echo "This is the submodule path: $path"
-				echo "The following line is the command to checkout the submodule."
-				echo "git submodule foreach --recursive 'git checkout-index -a -f --prefix=$SVNPATH/trunk/$path/'"
-				git submodule foreach --recursive 'git checkout-index -a -f --prefix=$SVNPATH/trunk/$path/'
-			done
-fi
 
 # Support for the /assets folder on the .org repo.
 echo "Moving assets"
